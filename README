@@ -1,0 +1,10 @@
+#点播系统SLB及MS的puppet模块
+
+1. 部署系统时只需修改`vod/manifests/params`
+
+        $smode = 'ms'       #要部署的服务器类型slb ms slbms
+        $kmode = 'slbmaster'    #keepalive的模式 master或者slave
+        $slbip = '6.6.6.6'   #vip
+        $superiorip = '2.2.2.2'		#superiorip
+
+2. 在node中`include vod`即可
