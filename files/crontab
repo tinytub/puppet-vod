@@ -1,0 +1,15 @@
+31 0 * * * /usr/sbin/ntpdate 192.168.105.41
+#8 */1 * * * /bin/sh /etc/zabbix/RsyncConfig.sh
+1 5 * * * /bin/cat /dev/null > /usr/local/nginx/logs/access.log
+#1 1 * * * /usr/bin/nohup /root/dabao.sh >> /logs/nohup.out
+#31 5 * * * /usr/bin/nohup /root/ftp.sh >> /logs/nohup.out
+* * * * *     cd /root/cdn/; /root/cdn/clicklog_stat_404.sh 2>&1 >/dev/null
+30 * * * *     cd /root/cdn/; /root/cdn/clicklog_stat.sh  2>&1 >/dev/null
+30 2 * * *    /bin/sh /root/cdn/clicklog_mysql_laod.sh  2>&1 >/dev/null
+* * * * *     /root/cdn/checkhealth.sh  2>&1 >/dev/null
+*/30 * * * * /root/cdn/checkdisk.sh        2>&1 >/dev/null
+* * * * *	cd /root/cdn/; /root/cdn/safe_ccws.sh     2>&1 >/dev/null
+*/5 * * * *  cd /root/cdn/; /root/cdn/create_key   2>&1 >/dev/null
+*/10 * * * * /bin/sh /root/cdn/BSR.sh  2>&1 >/dev/null
+00 5 * * * /bin/sh /root/cdn/slb_mysql_bak.sh  2>&1 >/dev/null
+01 00 * * * /bin/sh /root/cdn/info.sh  2>&1 >/dev/null

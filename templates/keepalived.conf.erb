@@ -1,0 +1,16 @@
+vrrp_instance VI_1 {
+        state BACKUP
+        interface <%= slbiter %>  #此处改为对应的ethN
+        mcast_src_ip 10.71.10.203
+        virtual_router_id 107
+        priority <%= priority %>  #权重
+	<%= nopreempt %>	#设置为不抢占
+        advert_int 2
+        authentication {
+                auth_type PASS
+                auth_pass i39.Net@
+        }
+        virtual_ipaddress {
+                <%= slbvip %>  #此处为对应的VIP
+        }
+}

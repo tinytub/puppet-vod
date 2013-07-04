@@ -1,0 +1,22 @@
+# Class: vod::services
+#
+class vod::services {
+	service { "keepalived":
+		enable => true,
+		ensure => running,
+		hasrestart => true,
+		hasstatus => true,
+		require => Package["keepalived"],
+		subscribe => File["/etc/keepalived/keepalived.conf"]
+	}
+	service { "nginx":
+	    enable => true,
+		ensure => running,
+		hasstatus => true,
+		hasrestart => true,
+		#hasrestart => true,
+		#hasstatus => true,
+		require => Package["nginx"],
+		subscribe => File["/usr/local/nginx/conf/nginx.conf"]
+	}
+}
