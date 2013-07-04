@@ -1,0 +1,96 @@
+#!/bin/bash
+
+#-------- install requirement ----------
+if [ `rpm -qa|grep -E "cyrus-sasl-(devel|md5)"|wc -l`  -ne  4 ];
+        then
+                yum -y install cyrus-sasl-devel cyrus-sasl-md5
+fi
+
+if [ `rpm -qa|grep "pcre-devel"|wc -l` -eq  0 ];
+        then
+                yum -y install pcre-devel
+fi
+
+
+if [ `rpm -aq|grep "mysql-5"|wc -l` -eq 0 ] ;
+        then echo "Not installed package:mysql! Please install mysql first!"
+        exit 1
+fi
+
+if [ `rpm -aq|grep "mysql-server"|wc -l` -eq 0 ] ;
+        then echo "Not installed package:mysql-server! Please install mysql-server first!"
+        exit 1
+fi
+
+if [ `rpm -aq|grep "net-snmp"|wc -l` -eq 0 ] ;
+        then echo "Not installed package:net-snmpd! Please install net-snmpd first!"
+        exit 1
+fi
+
+
+cd /root/
+
+service mysqld start
+echo
+echo "Press Enter to continue!"
+echo
+
+mysqladmin -uroot password sql@megajoy
+mysql -uroot -psql@megajoy < ./cdn/cdndb.sql
+echo "source /root/pre-soft/usr_conf_info.sql;"  |mysql -uroot -psql@megajoy mvod
+chkconfig mysqld on
+
+
+DB="/usr/bin/mysql -umvod -pMVOD mvod -hlocalhost -A -N"
+#echo "Enter slbip(VIP):"
+#read slbip
+slbip=<%= slbvip %>
+#-------- add to hosts  ----------
+echo "$slbip mvoddb" >> /etc/hosts
+
+#echo "Enter superiorIP:"
+#read superiorip
+superiorip=<%= superiorip %>
+echo "insert into rrsip       set  ip='$slbip'"|${DB}
+echo "insert into superiorip  set  ip='$superiorip'"|${DB}
+
+#-------- add to crontab ----------
+crontab -l > /tmp/cron.tmp
+echo "* * * * *     cd /root/cdn/; /root/cdn/clicklog_stat_404.sh 2>&1 >/dev/null" >> /tmp/cron.tmp
+echo "30 * * * *     cd /root/cdn/; /root/cdn/clicklog_stat.sh  2>&1 >/dev/null" >> /tmp/cron.tmp
+echo "30 2 * * *    /bin/sh /root/cdn/clicklog_mysql_laod.sh  2>&1 >/dev/null" >> /tmp/cron.tmp
+echo "* * * * *     /root/cdn/checkhealth.sh  2>&1 >/dev/null" >> /tmp/cron.tmp
+if [ `crontab -l|grep "checkdisk"|wc -l` -eq 0 ] ;
+        then echo "*/30 * * * * /root/cdn/checkdisk.sh        2>&1 >/dev/null" >> /tmp/cron.tmp
+fi
+echo "* * * * * cd /root/cdn/; /root/cdn/safe_ccws.sh     2>&1 >/dev/null" >> /tmp/cron.tmp
+echo "*/5 * * * *  cd /root/cdn/; /root/cdn/create_key   2>&1 >/dev/null" >> /tmp/cron.tmp
+echo "*/10 * * * * /bin/sh /root/cdn/BSR.sh  2>&1 >/dev/null" >> /tmp/cron.tmp
+echo "00 5 * * * /bin/sh /root/cdn/slb_mysql_bak.sh  2>&1 >/dev/null" >> /tmp/cron.tmp
+echo "01 00 * * * /bin/sh /root/cdn/info.sh  2>&1 >/dev/null" >> /tmp/cron.tmp
+crontab /tmp/cron.tmp && rm -f /tmp/cron.tmp
+
+#------ install memcached -------
+rpm -ivh /root/rpms/libevent-1.4.14b-1.x86_64.rpm
+rpm -ivh /root/rpms/memcached-1.4.5-MVOD1.x86_64.rpm
+rpm -ivh /root/rpms/libmemcached-0.48-MVOD1.x86_64.rpm
+
+echo "/opt/libevent/lib" > /etc/ld.so.conf.d/mvod.conf
+echo "/opt/libmemcached/lib" >> /etc/ld.so.conf.d/mvod.conf
+/sbin/ldconfig   /etc/ld.so.conf.d/mvod.conf
+
+tar zxvf /root/pre-soft/lib/libyyturl.tar.gz -C /opt
+echo "/opt/libyyturl/lib" >> /etc/ld.so.conf && /sbin/ldconfig
+
+
+#------ add to startup ------
+echo "/opt/memcached/bin/memcached -d -uroot -m 1024 -l 127.0.0.1 -p 11211" >> /etc/rc.local
+echo "cd /root/cdn/ && /root/cdn/safe_ccws.sh &" >> /etc/rc.local
+
+#-------start running! ----------
+mkdir -p /root/cdn/log/
+mkdir -p /root/cdn/bak/
+chmod +x -R /root/cdn/*
+
+echo "$0 Done!  Please restart the system!"
+exit 0
